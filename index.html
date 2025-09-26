@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KHKT - Thao túng tâm lý của truyền thông</title>
+<style>
+  :root { --bg: #f4fbff; --card:#ffffff; --accent:#2b9bd3; --muted:#555; }
+  body { margin:0; font-family: system-ui, Arial; background:var(--bg); color:#111; }
+  header { background: linear-gradient(90deg,#e6f6ff, #f0fbff); padding:20px; box-shadow:0 1px 0 rgba(0,0,0,0.05); }
+  .container{max-width:1000px;margin:20px auto;padding:0 16px;}
+  h1{margin:0 0 8px;font-size:22px;color:var(--accent);}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:16px;}
+  .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(15,30,80,0.06);}
+  p.muted{color:var(--muted);margin:8px 0 0}
+  /* canvas area */
+  #simWrap{height:420px;display:flex;flex-direction:column;}
+  #simCanvas{flex:1;border-radius:8px;background:#fff;display:block;width:100%;}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:8px;}
+  button{background:var(--accent);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;}
+  input[type=range]{flex:1;}
+  footer{margin:28px 0 60px;color:var(--muted);text-align:center}
+  @media (max-width:900px){ .grid{grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <h1>Thao túng tâm lý của truyền thông trong kỷ nguyên số — Mô phỏng lan truyền tin giả</h1>
+    <p class="muted">Mục tiêu: minh hoạ cơ chế truyền tin (agent-based) và hiệu ứng bầy đàn.</p>
+  </div>
+</header>
+
+<main class="container">
+  <div class="grid">
+    <section class="card">
+      <h2>Nội dung & Giải pháp</h2>
+      <p>Ở phần này bạn mô tả giải pháp: dùng mô phỏng để chứng minh yếu tố tâm lý bầy đàn + thuật toán đề xuất khiến thông tin thao túng bùng phát.</p>
+      <h3>Hướng dẫn mô phỏng</h3>
+      <ol>
+        <li>Start: chọn số agent, xác suất lây nhiễm, tốc độ di chuyển.</li>
+        <li>Observe: theo dõi tỷ lệ agent 'bị ảnh hưởng' theo thời gian.</li>
+        <li>So sánh: thay đổi tham số để thấy ảnh hưởng.</li>
+      </ol>
+      <h3>Gợi ý phân tích</h3>
+      <p>Ghi lại đồ thị, so sánh tốc độ lây lan khi thay đổi xác suất chia sẻ, tỉ lệ người tin, v.v.</p>
+    </section>
+
+    <aside class="card">
+      <h3>Mô phỏng tương tác</h3>
+      <div id="simWrap">
+        <canvas id="simCanvas"></canvas>
+        <div class="controls">
+          <label>Agents <span id="nAgentsLabel">80</span></label>
+          <input id="nAgents" type="range" min="10" max="300" value="80">
+          <button id="startBtn">Start</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <p class="muted">Màu xanh: bình thường • Màu đỏ: đã nhận tin giả (đang chia sẻ)</p>
+    </aside>
+  </div>
+
+  <section style="margin-top:16px" class="card">
+    <h2>Kết luận tạm</h2>
+    <p>Phần này bạn đưa kết luận sơ bộ, khuyến nghị và phương án giảm rủi ro (giải pháp giáo dục thông tin, kiểm chứng nguồn, giảm hiệu ứng bầy đàn).</p>
+  </section>
+
+  <footer>
+    © Bạn — Dự án KHKT | Ghi nguồn & tham khảo khi cần
+  </footer>
+</main>
+
+<script>
+/* Simple agent-based contagion simulation on canvas */
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+const DPR = window.devicePixelRatio || 1;
+
+function resize() {
+  const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const h = 360;
+  canvas.width = Math.floor(w * DPR);
+  canvas.height = Math.floor(h * DPR);
+  canvas.style.height = h + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+resize();
+window.addEventListener('resize', resize);
+
+let agents = [];
+let running = false;
+const params = { n:80, speed:1.2, infProb:0.25, recoverProb:0.002 };
+
+document.getElementById('nAgents').addEventListener('input', e=>{
+  params.n = +e.target.value;
+  document.getElementById('nAgentsLabel').textContent = params.n;
+});
+document.getElementById('startBtn').addEventListener('click', ()=>{ running = !running; document.getElementById('startBtn').textContent = running ? 'Pause' : 'Start'; if(running) loop(); });
+document.getElementById('resetBtn').addEventListener('click', ()=>{ init(); draw(); running=false; document.getElementById('startBtn').textContent='Start'; });
+
+function rand(min,max){ return Math.random()*(max-min)+min; }
+
+function init(){
+  agents = [];
+  const W = canvas.clientWidth, H = 360;
+  for(let i=0;i<params.n;i++){
+    agents.push({
+      x: rand(10,W-10), y: rand(10,H-10),
+      vx: rand(-params.speed,params.speed),
+      vy: rand(-params.speed,params.speed),
+      state: 'sus' // sus, inf, rec
+    });
+  }
+  // seed a few infected
+  for(let i=0;i<Math.max(1, Math.floor(params.n*0.02)); i++){
+    agents[i].state = 'inf';
+  }
+}
+init();
+
+function step(){
+  const W = canvas.clientWidth, H = 360;
+  // move
+  for(let a of agents){
+    a.x += a.vx; a.y += a.vy;
+    if(a.x < 6 || a.x > W-6) a.vx *= -1;
+    if(a.y < 6 || a.y > H-6) a.vy *= -1;
+    // small random jitter
+    a.vx += rand(-0.05,0.05); a.vy += rand(-0.05,0.05);
+    // cap speed
+    const s = Math.hypot(a.vx,a.vy);
+    const maxs = params.speed+0.6;
+    if(s>maxs){ a.vx = (a.vx/s)*maxs; a.vy = (a.vy/s)*maxs; }
+  }
+  // interactions (collision radius)
+  for(let i=0;i<agents.length;i++){
+    for(let j=i+1;j<agents.length;j++){
+      const A=agents[i], B=agents[j];
+      const dx=A.x-B.x, dy=A.y-B.y;
+      const d2 = dx*dx+dy*dy;
+      const r = 12;
+      if(d2 < r*r){
+        // simple bounce
+        const nx = dx/Math.sqrt(d2||1);
+        const ny = dy/Math.sqrt(d2||1);
+        A.vx += nx*0.2; A.vy += ny*0.2;
+        B.vx -= nx*0.2; B.vy -= ny*0.2;
+        // infection attempt
+        if((A.state==='inf' && B.state==='sus') || (B.state==='inf' && A.state==='sus')){
+          if(Math.random() < params.infProb) {
+            if(A.state==='sus') A.state='inf';
+            else B.state='inf';
+          }
+        }
+      }
+    }
+  }
+  // recovery (lose interest / stop sharing)
+  for(let a of agents){
+    if(a.state==='inf' && Math.random() < params.recoverProb){
+      a.state='rec';
+    }
+  }
+}
+
+function draw(){
+  const W = canvas.clientWidth, H = 360;
+  ctx.clearRect(0,0,W,H);
+  // background grid
+  ctx.fillStyle = '#fafcff';
+  ctx.fillRect(0,0,W,H);
+  // draw agents
+  for(let a of agents){
+    if(a.state==='sus') ctx.fillStyle = '#2b9bd3'; // blue
+    else if(a.state==='inf') ctx.fillStyle = '#d94b4b'; // red
+    else ctx.fillStyle = '#9aa3ad'; // recovered gray
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, 5, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // summary
+  const s = agents.filter(x=>x.state==='sus').length;
+  const i = agents.filter(x=>x.state==='inf').length;
+  const r = agents.filter(x=>x.state==='rec').length;
+  ctx.fillStyle = '#222';
+  ctx.font = '13px system-ui, Arial';
+  ctx.fillText(`Bình thường: ${s}   Đang chia sẻ (tin giả): ${i}   Dừng chia sẻ: ${r}`, 10, H-8);
+}
+
+function loop(){
+  if(!running) return;
+  step();
+  draw();
+  requestAnimationFrame(loop);
+}
+draw();
+
+// allow parameter tuning by keyboard (optional)
+window.addEventListener('keydown', e=>{
+  if(e.key==='ArrowUp') params.infProb = Math.min(1, params.infProb+0.02);
+  if(e.key==='ArrowDown') params.infProb = Math.max(0, params.infProb-0.02);
+});
+</script>
+</body>
+</html>
