@@ -1,206 +1,282 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KHKT - Thao túng tâm lý của truyền thông</title>
-<style>
-  :root { --bg: #f4fbff; --card:#ffffff; --accent:#2b9bd3; --muted:#555; }
-  body { margin:0; font-family: system-ui, Arial; background:var(--bg); color:#111; }
-  header { background: linear-gradient(90deg,#e6f6ff, #f0fbff); padding:20px; box-shadow:0 1px 0 rgba(0,0,0,0.05); }
-  .container{max-width:1000px;margin:20px auto;padding:0 16px;}
-  h1{margin:0 0 8px;font-size:22px;color:var(--accent);}
-  .grid{display:grid;grid-template-columns:1fr 360px;gap:16px;}
-  .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(15,30,80,0.06);}
-  p.muted{color:var(--muted);margin:8px 0 0}
-  /* canvas area */
-  #simWrap{height:420px;display:flex;flex-direction:column;}
-  #simCanvas{flex:1;border-radius:8px;background:#fff;display:block;width:100%;}
-  .controls{display:flex;gap:8px;align-items:center;margin-top:8px;}
-  button{background:var(--accent);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;}
-  input[type=range]{flex:1;}
-  footer{margin:28px 0 60px;color:var(--muted);text-align:center}
-  @media (max-width:900px){ .grid{grid-template-columns:1fr; } }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mô phỏng song song: Tin giả vs Tin kiểm chứng</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#eef5ff;margin:0}
+    header{padding:14px 18px;background:linear-gradient(90deg,#08203a,#062033);display:flex;align-items:center;gap:12px}
+    header h1{font-size:18px;margin:0;color:#7fd1ff}
+    .controls{padding:12px 18px;display:flex;gap:10px;align-items:center;background:#071426}
+    button{padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+    .btn-run{background:#ff6b6b;color:#120000}
+    .btn-run2{background:#34d399;color:#00220a}
+    .btn-both{background:linear-gradient(90deg,#ff6b6b,#34d399);color:#041216}
+    .btn-reset{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#cbd5e1}
+    .wrap{display:flex;gap:14px;padding:14px}
+    #viz{flex:1;background:linear-gradient(180deg,#051428,#07182a);padding:12px;border-radius:10px}
+    #sidebar{width:360px}
+    svg{width:100%;height:520px;border-radius:8px}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:12px;border-radius:8px;margin-bottom:12px}
+    .statrow{display:flex;gap:8px}
+    .stat{flex:1;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;text-align:center}
+    .legend{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .dot{width:12px;height:12px;border-radius:50%}
+    footer{padding:10px 18px;font-size:13px;color:#99a3b3}
+    label{font-size:14px;color:#cfeaff}
+  </style>
 </head>
 <body>
-<header>
-  <div class="container">
-    <h1>Thao túng tâm lý của truyền thông trong kỷ nguyên số — Mô phỏng lan truyền tin giả</h1>
-    <p class="muted">Mục tiêu: minh hoạ cơ chế truyền tin (agent-based) và hiệu ứng bầy đàn.</p>
+  <header>
+    <svg width="40" height="40"><rect width="40" height="40" rx="8" fill="#0b6efd"/></svg>
+    <h1>Mô phỏng SONG SONG — Tin giả (ĐỎ) vs Tin kiểm chứng (XANH)</h1>
+  </header>
+
+  <div class="controls">
+    <button class="btn-run" id="btnFake">📤 Chạy: Tin giả (đỏ)</button>
+    <button class="btn-run2" id="btnReal">🔍 Chạy: Tin kiểm chứng (xanh)</button>
+    <button class="btn-both" id="btnBoth">▶️ Chạy cùng lúc (Cả 2)</button>
+    <button class="btn-reset" id="btnReset">🔁 Đặt lại</button>
+    <label style="margin-left:12px"><input type="checkbox" id="autoLoop"> Tự động lặp</label>
   </div>
-</header>
 
-<main class="container">
-  <div class="grid">
-    <section class="card">
-      <h2>Nội dung & Giải pháp</h2>
-      <p>Ở phần này bạn mô tả giải pháp: dùng mô phỏng để chứng minh yếu tố tâm lý bầy đàn + thuật toán đề xuất khiến thông tin thao túng bùng phát.</p>
-      <h3>Hướng dẫn mô phỏng</h3>
-      <ol>
-        <li>Start: chọn số agent, xác suất lây nhiễm, tốc độ di chuyển.</li>
-        <li>Observe: theo dõi tỷ lệ agent 'bị ảnh hưởng' theo thời gian.</li>
-        <li>So sánh: thay đổi tham số để thấy ảnh hưởng.</li>
-      </ol>
-      <h3>Gợi ý phân tích</h3>
-      <p>Ghi lại đồ thị, so sánh tốc độ lây lan khi thay đổi xác suất chia sẻ, tỉ lệ người tin, v.v.</p>
-    </section>
+  <div class="wrap">
+    <div id="viz" class="panel">
+      <svg id="network"></svg>
+    </div>
 
-    <aside class="card">
-      <h3>Mô phỏng tương tác</h3>
-      <div id="simWrap">
-        <canvas id="simCanvas"></canvas>
-        <div class="controls">
-          <label>Agents <span id="nAgentsLabel">80</span></label>
-          <input id="nAgents" type="range" min="10" max="300" value="80">
-          <button id="startBtn">Start</button>
-          <button id="resetBtn">Reset</button>
+    <div id="sidebar">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong style="color:#bfe8ff">SỐ LIỆU TRỰC TIẾP</strong>
+          <div style="font-size:12px;color:#9fb6c9">Thời gian thực</div>
+        </div>
+        <div class="statrow" style="margin-top:10px">
+          <div class="stat">
+            <div style="font-size:20px;color:#ffd6d6" id="countFake">0</div>
+            <div style="font-size:13px;color:#9fb6c9">Người tiếp cận (Tin giả)</div>
+          </div>
+          <div class="stat">
+            <div style="font-size:20px;color:#b7ffd6" id="countReal">0</div>
+            <div style="font-size:13px;color:#9fb6c9">Người tiếp cận (Tin kiểm chứng)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <canvas id="chart" width="320" height="180"></canvas>
+        </div>
+
+        <div class="legend" style="margin-top:10px">
+          <div class="item"><span class="dot" style="background:#ffd6d6"></span> Tin giả (lan nhanh)</div>
+          <div class="item"><span class="dot" style="background:#b7ffd6"></span> Tin kiểm chứng (lan chậm)</div>
         </div>
       </div>
-      <p class="muted">Màu xanh: bình thường • Màu đỏ: đã nhận tin giả (đang chia sẻ)</p>
-    </aside>
+
+      <div class="panel">
+        <strong style="color:#bfe8ff">Cách dùng nhanh</strong>
+        <ol style="color:#bcd9ea;text-align:left;margin-top:8px">
+          <li>Nhấn <em>Chạy cùng lúc</em> để quan sát cả 2 kịch bản song song.</li>
+          <li>Bấm <em>Đặt lại</em> để chạy lại. Tick <em>Tự động lặp</em> nếu muốn demo liên tục.</li>
+          <li>Quan sát nút đỏ/ xanh, đường nối sáng, và đồ thị hai đường so sánh.</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <strong style="color:#bfe8ff">Ý nghĩa ngắn</strong>
+        <p style="color:#bcd9ea;text-align:left">Mô phỏng cho thấy cùng một thời điểm nguồn tin có thể tạo ra hai mức lan truyền khác nhau tùy cách người tiếp nhận phản ứng (cảm tính — chia sẻ ngay / cẩn trọng — kiểm chứng). Điều này trực quan hóa cơ chế thao túng tâm lý.</p>
+      </div>
+    </div>
   </div>
 
-  <section style="margin-top:16px" class="card">
-    <h2>Kết luận tạm</h2>
-    <p>Phần này bạn đưa kết luận sơ bộ, khuyến nghị và phương án giảm rủi ro (giải pháp giáo dục thông tin, kiểm chứng nguồn, giảm hiệu ứng bầy đàn).</p>
-  </section>
-
   <footer>
-    © Bạn — Dự án KHKT | Ghi nguồn & tham khảo khi cần
+    Lưu file là <strong>index.html</strong> → mở trình duyệt. Muốn mình xuất bản GIF/MP4 cho slide không?
   </footer>
-</main>
 
 <script>
-/* Simple agent-based contagion simulation on canvas */
-const canvas = document.getElementById('simCanvas');
-const ctx = canvas.getContext('2d');
-const DPR = window.devicePixelRatio || 1;
+/* ========== Thiết lập mạng ========== */
+const N = 36;
+const svg = d3.select("#network").attr("viewBox","0 0 900 520");
+const W = 900, H = 520;
+const nodes = d3.range(N).map(i=>({id:i}));
+let links = [];
+for(let i=0;i<N*2;i++){ let a=Math.floor(Math.random()*N); let b=Math.floor(Math.random()*N); if(a!==b) links.push({source:a,target:b}); }
 
-function resize() {
-  const w = canvas.clientWidth || canvas.parentElement.clientWidth;
-  const h = 360;
-  canvas.width = Math.floor(w * DPR);
-  canvas.height = Math.floor(h * DPR);
-  canvas.style.height = h + 'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-resize();
-window.addEventListener('resize', resize);
+const sim = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d=>d.id).distance(85).strength(0.3))
+  .force("charge", d3.forceManyBody().strength(-160))
+  .force("center", d3.forceCenter(W/2,H/2))
+  .alphaDecay(0.02);
 
-let agents = [];
-let running = false;
-const params = { n:80, speed:1.2, infProb:0.25, recoverProb:0.002 };
+const link = svg.append("g").selectAll("line").data(links).enter().append("line").attr("stroke","#082233").attr("stroke-width",1);
+const node = svg.append("g").selectAll("circle").data(nodes).enter().append("circle").attr("r",9).attr("fill","#6f7f8f").attr("stroke","#021226");
 
-document.getElementById('nAgents').addEventListener('input', e=>{
-  params.n = +e.target.value;
-  document.getElementById('nAgentsLabel').textContent = params.n;
+sim.on("tick", ()=>{
+  link.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+  node.attr("cx",d=>d.x).attr("cy",d=>d.y);
 });
-document.getElementById('startBtn').addEventListener('click', ()=>{ running = !running; document.getElementById('startBtn').textContent = running ? 'Pause' : 'Start'; if(running) loop(); });
-document.getElementById('resetBtn').addEventListener('click', ()=>{ init(); draw(); running=false; document.getElementById('startBtn').textContent='Start'; });
 
-function rand(min,max){ return Math.random()*(max-min)+min; }
+/* ========== Chart setup (2 đường) ========== */
+const ctx = document.getElementById('chart').getContext('2d');
+const chartData = { labels: [], datasets: [
+  { label: 'Tin giả', data: [], borderColor:'#ff6b6b', backgroundColor:'rgba(255,107,107,0.12)', tension:0.3 },
+  { label: 'Tin kiểm chứng', data: [], borderColor:'#34d399', backgroundColor:'rgba(52,211,153,0.12)', tension:0.3 }
+]};
+const myChart = new Chart(ctx, { type:'line', data: chartData, options:{responsive:true, plugins:{legend:{display:true}} } });
 
-function init(){
-  agents = [];
-  const W = canvas.clientWidth, H = 360;
-  for(let i=0;i<params.n;i++){
-    agents.push({
-      x: rand(10,W-10), y: rand(10,H-10),
-      vx: rand(-params.speed,params.speed),
-      vy: rand(-params.speed,params.speed),
-      state: 'sus' // sus, inf, rec
-    });
-  }
-  // seed a few infected
-  for(let i=0;i<Math.max(1, Math.floor(params.n*0.02)); i++){
-    agents[i].state = 'inf';
-  }
+/* ========== Trạng thái ========== */
+let visitedFake = new Set(), visitedReal = new Set();
+let runningFake=false, runningReal=false;
+let step = 0;
+let autoInterval = null;
+
+/* reset toàn bộ */
+function resetAll(){
+  runningFake = runningReal = false;
+  visitedFake.clear(); visitedReal.clear();
+  step = 0;
+  chartData.labels.length = 0;
+  chartData.datasets[0].data.length = 0;
+  chartData.datasets[1].data.length = 0;
+  myChart.update();
+  d3.selectAll('circle').transition().duration(200).attr('fill','#6f7f8f').attr('r',9);
+  d3.selectAll('line').transition().duration(200).attr('stroke','#082233').attr('stroke-width',1);
+  document.getElementById('countFake').innerText = 0;
+  document.getElementById('countReal').innerText = 0;
 }
-init();
 
-function step(){
-  const W = canvas.clientWidth, H = 360;
-  // move
-  for(let a of agents){
-    a.x += a.vx; a.y += a.vy;
-    if(a.x < 6 || a.x > W-6) a.vx *= -1;
-    if(a.y < 6 || a.y > H-6) a.vy *= -1;
-    // small random jitter
-    a.vx += rand(-0.05,0.05); a.vy += rand(-0.05,0.05);
-    // cap speed
-    const s = Math.hypot(a.vx,a.vy);
-    const maxs = params.speed+0.6;
-    if(s>maxs){ a.vx = (a.vx/s)*maxs; a.vy = (a.vy/s)*maxs; }
-  }
-  // interactions (collision radius)
-  for(let i=0;i<agents.length;i++){
-    for(let j=i+1;j<agents.length;j++){
-      const A=agents[i], B=agents[j];
-      const dx=A.x-B.x, dy=A.y-B.y;
-      const d2 = dx*dx+dy*dy;
-      const r = 12;
-      if(d2 < r*r){
-        // simple bounce
-        const nx = dx/Math.sqrt(d2||1);
-        const ny = dy/Math.sqrt(d2||1);
-        A.vx += nx*0.2; A.vy += ny*0.2;
-        B.vx -= nx*0.2; B.vy -= ny*0.2;
-        // infection attempt
-        if((A.state==='inf' && B.state==='sus') || (B.state==='inf' && A.state==='sus')){
-          if(Math.random() < params.infProb) {
-            if(A.state==='sus') A.state='inf';
-            else B.state='inf';
-          }
+/* hàm lan truyền chung nhưng riêng tham số cho 2 kịch bản */
+function propagate(seedIndex, setVisited, color, params, highlightColor){
+  // seed luôn là nút vàng (vẽ trước), nhưng mỗi kịch bản có seed khác để tránh xung đột
+  // params: {prob, delay, max}
+  const neighbors = links.filter(l=>l.source.id===seedIndex).map(l=>l.target.id).concat(links.filter(l=>l.target.id===seedIndex).map(l=>l.source.id));
+  // initial spread from seed
+  neighbors.forEach(id=>{
+    if(Math.random() < params.prob && setVisited.size < params.max){
+      setVisited.add(id);
+      d3.select(node.nodes()[id]).attr('fill', color);
+    }
+  });
+
+  step++; chartData.labels.push('t' + step);
+  chartData.datasets[0].data.push(visitedFake.size);
+  chartData.datasets[1].data.push(visitedReal.size);
+  myChart.update();
+  document.getElementById('countFake').innerText = visitedFake.size;
+  document.getElementById('countReal').innerText = visitedReal.size;
+
+  // queue-driven spreading
+  const queue = Array.from(setVisited);
+  function stepSpread(q){
+    if(q.length === 0) return;
+    const next = [];
+    q.forEach(curId=>{
+      const neigh = links.filter(l=>l.source.id===curId).map(l=>l.target.id).concat(links.filter(l=>l.target.id===curId).map(l=>l.source.id));
+      neigh.forEach(nb=>{
+        // if already visited by this scenario, ignore
+        if(setVisited.has(nb)) return;
+        // don't let nodes beyond max participate
+        if(setVisited.size >= params.max) return;
+        if(Math.random() < params.prob){
+          setVisited.add(nb);
+          // visual node pulse
+          d3.select(node.nodes()[nb])
+            .transition().duration(120).attr('r',15).attr('fill', color)
+            .transition().duration(220).attr('r',9);
+          // highlight connecting lines
+          links.forEach((l,i)=>{
+            if( (l.source.id===curId && l.target.id===nb) || (l.target.id===curId && l.source.id===nb) ){
+              d3.select(link.nodes()[i])
+                .transition().duration(120).attr('stroke', highlightColor).attr('stroke-width',3)
+                .transition().duration(300).attr('stroke','#082233').attr('stroke-width',1);
+            }
+          });
+          next.push(nb);
         }
-      }
-    }
+      });
+    });
+    // update chart + counters
+    step++; chartData.labels.push('t' + step);
+    chartData.datasets[0].data.push(visitedFake.size);
+    chartData.datasets[1].data.push(visitedReal.size);
+    myChart.update();
+    document.getElementById('countFake').innerText = visitedFake.size;
+    document.getElementById('countReal').innerText = visitedReal.size;
+    // continue
+    if(step > 80 || setVisited.size >= params.max) return;
+    setTimeout(()=> stepSpread(next), params.delay);
   }
-  // recovery (lose interest / stop sharing)
-  for(let a of agents){
-    if(a.state==='inf' && Math.random() < params.recoverProb){
-      a.state='rec';
-    }
-  }
+  setTimeout(()=> stepSpread(queue), params.delay);
 }
 
-function draw(){
-  const W = canvas.clientWidth, H = 360;
-  ctx.clearRect(0,0,W,H);
-  // background grid
-  ctx.fillStyle = '#fafcff';
-  ctx.fillRect(0,0,W,H);
-  // draw agents
-  for(let a of agents){
-    if(a.state==='sus') ctx.fillStyle = '#2b9bd3'; // blue
-    else if(a.state==='inf') ctx.fillStyle = '#d94b4b'; // red
-    else ctx.fillStyle = '#9aa3ad'; // recovered gray
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, 5, 0, Math.PI*2);
-    ctx.fill();
+/* chạy từng kịch bản riêng */
+function runFake(){
+  // choose seed 0 for fake; mark it gold visually
+  resetSeedVisuals();
+  d3.select(node.nodes()[0]).attr('fill','gold').attr('r',13);
+  runningFake = true; visitedFake.clear();
+  propagate(0, visitedFake, '#ff6b6b', {prob:0.85, delay:150, max:N}, '#ff9a9a');
+}
+function runReal(){
+  resetSeedVisuals();
+  // choose seed 1 for real
+  d3.select(node.nodes()[1]).attr('fill','gold').attr('r',13);
+  runningReal = true; visitedReal.clear();
+  propagate(1, visitedReal, '#34d399', {prob:0.25, delay:480, max:Math.max(6,Math.floor(N*0.2))}, '#8ee7be');
+}
+
+/* chạy cùng lúc: seed 0 fake, seed 1 real */
+function runBoth(){
+  resetAll();
+  // mark both seeds
+  d3.select(node.nodes()[0]).attr('fill','gold').attr('r',13);
+  d3.select(node.nodes()[1]).attr('fill','gold').attr('r',13);
+  runningFake = runningReal = true;
+  visitedFake.clear(); visitedReal.clear();
+  // Start both
+  propagate(0, visitedFake, '#ff6b6b', {prob:0.85, delay:150, max:N}, '#ff9a9a');
+  setTimeout(()=> propagate(1, visitedReal, '#34d399', {prob:0.25, delay:480, max:Math.max(6,Math.floor(N*0.2))}, '#8ee7be'), 80);
+}
+
+/* helper to reset seed visuals if user runs single */
+function resetSeedVisuals(){
+  d3.selectAll('circle').attr('r',9);
+  d3.selectAll('circle').attr('fill','#6f7f8f');
+}
+
+/* auto loop */
+document.getElementById('autoLoop').addEventListener('change', (e)=>{
+  if(e.target.checked){
+    // auto run both every 6 seconds
+    runBoth();
+    autoInterval = setInterval(()=>{ runBoth(); }, 7000);
+  } else {
+    clearInterval(autoInterval);
   }
-  // summary
-  const s = agents.filter(x=>x.state==='sus').length;
-  const i = agents.filter(x=>x.state==='inf').length;
-  const r = agents.filter(x=>x.state==='rec').length;
-  ctx.fillStyle = '#222';
-  ctx.font = '13px system-ui, Arial';
-  ctx.fillText(`Bình thường: ${s}   Đang chia sẻ (tin giả): ${i}   Dừng chia sẻ: ${r}`, 10, H-8);
-}
-
-function loop(){
-  if(!running) return;
-  step();
-  draw();
-  requestAnimationFrame(loop);
-}
-draw();
-
-// allow parameter tuning by keyboard (optional)
-window.addEventListener('keydown', e=>{
-  if(e.key==='ArrowUp') params.infProb = Math.min(1, params.infProb+0.02);
-  if(e.key==='ArrowDown') params.infProb = Math.max(0, params.infProb-0.02);
 });
+
+document.getElementById('btnFake').addEventListener('click', ()=>{
+  resetAll();
+  runFake();
+});
+document.getElementById('btnReal').addEventListener('click', ()=>{
+  resetAll();
+  runReal();
+});
+document.getElementById('btnBoth').addEventListener('click', ()=>{
+  resetAll();
+  runBoth();
+});
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  resetAll();
+  document.getElementById('autoLoop').checked = false;
+  clearInterval(autoInterval);
+});
+
+/* init */
+resetAll();
 </script>
 </body>
 </html>
